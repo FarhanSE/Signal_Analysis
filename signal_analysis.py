@@ -21,8 +21,8 @@
  *                                                                         *
  ***************************************************************************/
 """
-from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, QThread, pyqtSignal
-from qgis.PyQt.QtGui import QIcon
+from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, QThread, pyqtSignal, QVariant
+from qgis.PyQt.QtGui import QIcon, QColor
 from qgis.PyQt.QtWidgets import QAction
 
 # Initialize Qt resources from file resources.py
@@ -35,13 +35,26 @@ from qgis.core import (
     QgsPointXY,
     QgsGeometry,
     QgsSpatialIndex,
-    QgsFeatureRequest
+    QgsFeatureRequest,
+    QgsField,
+    QgsFeature,
+    QgsCoordinateReferenceSystem,
+    QgsCategorizedSymbolRenderer,
+    QgsSymbol,
+    QgsRendererCategory,
+    QgsProject
+
 )
+import datetime
+import random
+
 
 
 class Worker(QThread):
     finished = pyqtSignal() 
     progress = pyqtSignal(int)
+    logs = pyqtSignal(str)
+    log_text = str()
 
     def __init__(self, dlg, iface):
         super(QThread, self).__init__()
@@ -51,16 +64,32 @@ class Worker(QThread):
         self.iface = iface
     
     def signal_analysis(self):
-
+        """
+        To run tasks according to action selected in the top dropdown
+        @Params     None
+        @return     None
+        @author     Original Author Asim Aziz   -   County Broadband [asim.aziz[a]countybroadband.co.uk]
+        """
         # substitute with your code.
         try:
             mapcanvas = self.iface.mapCanvas()
             layers = mapcanvas.layers()
 
-            # create a temporary line layer to connect civics to tower
-            line = QgsVectorLayer("LineString", "civic_to_tower", "memory")
-            civic_to_tower = line.dataProvider()
+            # # create a temporary line layer to connect civics to tower
+            fields = [QgsField('id', QVariant.Int), QgsField('civic', QVariant.Int), QgsField('tower', QVariant.Int)]
+            # create the line layer
+            current_time = datetime.datetime.now()
+            line_layer = QgsVectorLayer('LineString', f'Civic To Tower Line Layer {current_time}', 'memory')
+            line_layer.setCrs(QgsCoordinateReferenceSystem('EPSG:26920'))  
 
+            # add the fields to the layer
+            line_layer.startEditing()
+            line_layer.dataProvider().addAttributes(fields)
+            line_layer.commitChanges()
+
+            # Add the layer to the map
+            QgsProject.instance().addMapLayer(line_layer)
+            
 
             # get all inputs
             self.tower_layer = self.dlg.tower_layer.currentText()
@@ -68,14 +97,14 @@ class Worker(QThread):
 
             self.tower_layer_attr = self.dlg.tower_attribute.currentText()
             self.civic_layer_attr = self.dlg.civic_attribute.currentText()
-
+            
             self.civic_attr_value = self.dlg.civic_attribute_value.checkedItems()
             self.tower_attr_value = self.dlg.tower_attribute_value.checkedItems()
-
+            
             self.civic_selected = self.dlg.tower_layer_selected.isChecked()
             self.tower_selected = self.dlg.civic_layer_selected.isChecked()
 
-            self.threashold = self.dlg.threshold.currentText()
+            self.threashold = self.dlg.threshold.value()
             
             # get layers object
             for layerdd in layers:
@@ -98,89 +127,148 @@ class Worker(QThread):
                     self.tower_index.insertFeature(feature)
             else:
                 self.tower_index = QgsSpatialIndex(self.tower_layer_.getFeatures())
-
             # algo
-            total = self.tower_layer_.countFeatures()
-            for tower in self.get_features(self.tower_layer_, self.tower_selected):
-                if not self.filter_attrs(self.tower_layer_attr, self.tower_attr_value, tower):
-                    continue
-                tower_geom = tower.geomtery()
-                nearest_point_features = civic_spatial_index.nearestNeighbor(tower_geom, 1000)
-                for civic in self.civic_layer_.getFeatures(QgsFeatureRequest().setFilterFids(nearest_point_features)):
-                    if not self.filter_attrs(self.civic_layer_attr, self.civic_attr_value, civic):
+            line_layer.startEditing()
+            total = self.tower_layer_.featureCount()
+            try:
+                for iter, tower in enumerate(self.get_features(self.tower_layer_, self.tower_selected)):
+                    if not self.filter_attrs(self.tower_layer_attr, self.tower_attr_value, tower):
                         continue
-                    civic_geom = civic.geometry()
-                    if not self.filter_threashold(civic):
-                        continue
-                    if not self.check_if_current_tower_is_nearest(civic, tower):
-                        continue
-                    if not self.verify_tower_name(civic, tower):
-                        continue
-                    if not self.verify_azimuth(civic_geom, tower_geom, civic):
-                        continue
-                    self.civic_layer_.select(civic.id())
+                    tower_geom = tower.geometry()
+                    nearest_point_features = civic_spatial_index.nearestNeighbor(tower_geom, 200)
+                    for civic in self.civic_layer_.getFeatures(QgsFeatureRequest().setFilterFids(nearest_point_features)):
+                        if not self.filter_attrs(self.civic_layer_attr, self.civic_attr_value, civic):
+                            continue
+                        civic_geom = civic.geometry()
+                        if not self.filter_threashold(civic):
+                            continue
+                        if not self.check_if_current_tower_is_nearest(civic, tower):
+                            continue
+                        if not self.verify_tower_name(civic, tower):
+                            continue
+                        # if not self.verify_azimuth(civic_geom, tower_geom, civic):
+                        #     continue
+                        self.civic_layer_.select(civic.id())
+                        # create a line feature and add it to the layer
+                        id = line_layer.featureCount()
+                        feature = QgsFeature()
+                        feature.setGeometry(QgsGeometry.fromPolylineXY([civic_geom.asPoint(), tower_geom.asPoint()]))  # define the line geometry
+                        feature.setAttributes([int(id)+1, civic.id(), tower.id()])
+                        line_layer.addFeature(feature)
+                
+                    self.progress.emit(int((iter+1)/total*100))
+            except Exception as e:
+                self.log_text += f"{e}"
+                self.logs.emit(self.log_text)
+            # line_layer.commitChanges()
+            # unique_values = line_layer.uniqueValues(line_layer.fieldNameIndex('tower'))
+            # color_map = {}
+            # for value in unique_values:
+            #     color_code = self.generate_unique_color()
+            #     color_map[value] = QColor(color_code)
+            # # Create a categorized symbol renderer
+            # renderer = 	QgsCategorizedSymbolRenderer('tower', [])
+            # # Set a color for each category
+            # for value, color in color_map.items():
+            #     symbol = QgsSymbol.defaultSymbol(line_layer.geometryType())
+            #     symbol.setColor(color)
+            #     category = QgsRendererCategory(str(value), symbol, str(value))
+            #     renderer.addCategory(category)
 
+            #     # Set the renderer for the layer
+            #     line_layer.setRenderer(renderer)
 
-                    
-
-                self.progress.emit(int((iter+1)/total*100))
+            #     # Refresh the layer to update the symbology
+            #     line_layer.triggerRepaint()
+            
         except Exception as e:
+            self.log_text += f"{e}"
+            self.logs.emit(self.log_text)
             self.finished.emit()
         finally:
             self.progress.emit(100)
             self.finished.emit()
 
     def verify_tower_name(self, civic, tower):
-        tower_name = tower.attribute('site')
-        civic_tower = civic.attribute('Best Serve')
-        splitted_ = civic_tower.split('_')
-        civic_tower_name = ""
-        for word in splitted_:
-            if "TV" in word:
-                break
-            civic_tower_name += word
-        if tower_name == civic_tower_name:
-            return True
-        return False
+        try:
+            tower_name = tower.attribute('site')
+            civic_tower = civic.attribute('Best Serve')
+            if not civic.attribute('Best Serve'):
+                return False
+            splitted_ = str(civic_tower).split('_')
+        
+            tower_name = str(tower_name).replace(' ', '')
+
+            if tower_name == splitted_[0]:
+                return True
+            return False
+        except Exception as e:
+            self.log_text += f"{e}"
+            self.logs.emit(self.log_text)
+
+    def generate_unique_color(self):
+        """
+        Generates a unique RGB color code.
+        """
+        r = random.randint(0, 255)
+        g = random.randint(0, 255)
+        b = random.randint(0, 255)
+        return f"#{r:02x}{g:02x}{b:02x}"
+
 
     def filter_threashold(self, civic):
-        if self.threashold == 0:
-            return True
-        civic_threshold = civic.attribute('Received P')
-        if civic_threshold >= self.threashold:
-            return True
-        return False
-    
+        try:
+            civic_threshold = civic.attribute('Received P')
+            if civic_threshold >= self.threashold:
+                return True
+            return False
+        except Exception as e:
+            self.log_text += f"{e}"
+            self.logs.emit(self.log_text)
+
     def check_if_current_tower_is_nearest(self, civic, tower):
-        civic_geom = civic.geometry()
-        current_distance = civic_geom.distance(tower.geometry())
-        get_tower = self.get_neighbors(civic.geometry())
-        for tower in get_tower:
-            distance = tower.geometry().distance(civic_geom)
-            if current_distance > distance:
-                return False
-        else:
-            return True
+        try:
+
+            civic_geom = civic.geometry()
+            current_distance = civic_geom.distance(tower.geometry())
+            get_tower = self.get_neighbors(civic.geometry())
+            for tower in get_tower:
+                distance = tower.geometry().distance(civic_geom)
+                if current_distance > distance:
+                    return False
+            else:
+                return True
+        except Exception as e:
+            self.log_text += f"{e}"
+            self.logs.emit(self.log_text)
 
     def verify_azimuth(self, civic, tower, civic_feature):
-    
-        civic_point = civic.asPoint()
-        tower_point = tower.asPoint()
+        try:
+            civic_point = civic.asPoint()
+            tower_point = tower.asPoint()
+            if not civic_feature.attribute('Best Serve'):
+                return False
+            azimuth = QgsPointXY(civic_point[0], civic_point[1]).azimuth(QgsPointXY(tower_point[0], tower_point[1]))
+            civic_azi = civic_feature.attribute('Best Serve')
+            splitted_ = str(civic_azi).split('_')[-1]
+            civic_azi = splitted_[1:]
 
-        azimuth = QgsPointXY(civic_point[0], civic_point[-1]).azimuth(QgsPointXY(tower_point[0], tower_point[-1]))
-        civic_azi = civic_feature.attribute('Best Serve')
-        splitted_ = civic_azi.split('_')[-1]
-        civic_azi = splitted_[1:]
-
-        if civic_azi <= azimuth:
-            return True
-        return False
+            if float(civic_azi) <= azimuth:
+                return True
+            return False
+        except Exception as e:
+            self.log_text += f"{e}"
+            self.logs.emit(self.log_text)
     
     def get_neighbors(self, geom):
-        nearest_ids = self.tower_index.nearestNeighbor(geom, 10)
-        features = self.tower_layer_.getFeatures(QgsFeatureRequest().setFilterFids(nearest_ids))   
-        return features                
-
+        try:
+            nearest_ids = self.tower_index.nearestNeighbor(geom, 10)
+            features = self.tower_layer_.getFeatures(QgsFeatureRequest().setFilterFids(nearest_ids))   
+            return features                
+        except Exception as e:
+            self.log_text += f"{e}"
+            self.logs.emit(self.log_text)
+            
     def get_features(self, layer, isSelected):
         return layer.selectedFeatures() if isSelected else layer.getFeatures()
             
@@ -193,7 +281,7 @@ class Worker(QThread):
             return True
         
         if str(feature.attribute(attr)) in attr_value:
-            return True
+                return True
         else:
             return False
 
@@ -343,6 +431,7 @@ class SignalAnalysis:
                 action)
             self.iface.removeToolBarIcon(action)
 
+
     def run(self):
         """Run method that performs all the real work"""
 
@@ -369,7 +458,6 @@ class SignalAnalysis:
         self.dlg.tower_attribute.currentTextChanged.connect(self.set_tower_attrs_value)
         self.dlg.run.clicked.connect(self.startWorker)
         self.dlg.close_window.clicked.connect(self.killWorker)
-
         # show the dialog
         self.dlg.show()
         # Run the dialog event loop
@@ -446,17 +534,18 @@ class SignalAnalysis:
             attr_name = self.dlg.civic_attribute.currentText()
             layer = self.dlg.civic_layer.currentText()
 
-        for layerdd in layersdd:
-            if layerdd.name() != layer:
-                continue
-            for field in layerdd.fields():
-                if field.name() != attr_name:
+        if list_value is None:
+            for layerdd in layersdd:
+                if layerdd.name() != layer:
                     continue
-                idx = layerdd.fields().indexOf(field.name())
-                values = layerdd.uniqueValues(idx)
-                list_value = list(values)
+                for field in layerdd.fields():
+                    if field.name() != attr_name:
+                        continue
+                    idx = layerdd.fields().indexOf(field.name())
+                    values = layerdd.uniqueValues(idx)
+                    list_value = list(values)
+                    break
                 break
-            break
         if list_value is None:
             return False
                                     
@@ -473,6 +562,8 @@ class SignalAnalysis:
         self.worker.moveToThread(self.thread) # move Worker-Class to a thread
         # Connect signals and slots:
         self.thread.started.connect(self.worker.signal_analysis)
+        self.worker.progress.connect(self.reportProgress)
+        self.worker.logs.connect(self.set_logs)
         self.worker.finished.connect(self.thread.quit)
         self.worker.finished.connect(self.worker.deleteLater)
         self.thread.finished.connect(self.thread.deleteLater)
@@ -482,7 +573,9 @@ class SignalAnalysis:
         self.thread.finished.connect(lambda: self.dlg.run.setEnabled(True)) # enable the start-thread button when thread has been finished
 
         # method to kill/cancel the worker thread
-    
+    def set_logs(self, logs):
+        self.dlg.logs.setText(str(logs))
+
     def killWorker(self):         
         try: 
             self.worker.stop()
@@ -494,6 +587,12 @@ class SignalAnalysis:
         except:
             pass
         finally:
-            self.dlg.close()
+            self.close_window()
     
+    def reportProgress(self, n):
 
+        self.dlg.progressBar.setValue(n)
+        self.iface.mapCanvas().refresh()
+
+    def close_window(self):
+        self.dlg.close()
