@@ -1,0 +1,346 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Dialog</class>
+ <widget class="QDialog" name="Dialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>538</width>
+    <height>524</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Dialog</string>
+  </property>
+  <widget class="QCheckBox" name="tower_layer_selected">
+   <property name="geometry">
+    <rect>
+     <x>297</x>
+     <y>187</y>
+     <width>201</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>7</pointsize>
+     <weight>50</weight>
+     <bold>false</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>Selected Features Only</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_16">
+   <property name="geometry">
+    <rect>
+     <x>297</x>
+     <y>143</y>
+     <width>71</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>7</pointsize>
+     <weight>50</weight>
+     <bold>false</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>Attribute</string>
+   </property>
+  </widget>
+  <widget class="QCheckBox" name="civic_layer_selected">
+   <property name="geometry">
+    <rect>
+     <x>299</x>
+     <y>261</y>
+     <width>201</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>7</pointsize>
+     <weight>50</weight>
+     <bold>false</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>Selected Features Only</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_17">
+   <property name="geometry">
+    <rect>
+     <x>405</x>
+     <y>142</y>
+     <width>111</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>7</pointsize>
+     <weight>50</weight>
+     <bold>false</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>Attribute Value</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="layer_attr_value_title">
+   <property name="geometry">
+    <rect>
+     <x>408</x>
+     <y>218</y>
+     <width>111</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>7</pointsize>
+     <weight>50</weight>
+     <bold>false</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>Attribute Value</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="overlay_title">
+   <property name="geometry">
+    <rect>
+     <x>42</x>
+     <y>200</y>
+     <width>221</width>
+     <height>51</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <weight>75</weight>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>Civic Layer</string>
+   </property>
+  </widget>
+  <widget class="QComboBox" name="tower_layer">
+   <property name="geometry">
+    <rect>
+     <x>44</x>
+     <y>165</y>
+     <width>231</width>
+     <height>38</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QComboBox" name="tower_attribute">
+   <property name="geometry">
+    <rect>
+     <x>296</x>
+     <y>165</y>
+     <width>102</width>
+     <height>20</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QLabel" name="input_title">
+   <property name="geometry">
+    <rect>
+     <x>43</x>
+     <y>142</y>
+     <width>221</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <weight>75</weight>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>Tower Layer</string>
+   </property>
+  </widget>
+  <widget class="QComboBox" name="civic_attribute">
+   <property name="geometry">
+    <rect>
+     <x>299</x>
+     <y>239</y>
+     <width>102</width>
+     <height>21</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QComboBox" name="civic_layer">
+   <property name="geometry">
+    <rect>
+     <x>45</x>
+     <y>239</y>
+     <width>231</width>
+     <height>39</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QLabel" name="civic_attr_title">
+   <property name="geometry">
+    <rect>
+     <x>299</x>
+     <y>217</y>
+     <width>68</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>7</pointsize>
+     <weight>50</weight>
+     <bold>false</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>Attribute</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="close_window">
+   <property name="geometry">
+    <rect>
+     <x>323</x>
+     <y>459</y>
+     <width>89</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Close</string>
+   </property>
+  </widget>
+  <widget class="QProgressBar" name="progressBar">
+   <property name="geometry">
+    <rect>
+     <x>52</x>
+     <y>382</y>
+     <width>457</width>
+     <height>30</height>
+    </rect>
+   </property>
+   <property name="value">
+    <number>0</number>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="run">
+   <property name="geometry">
+    <rect>
+     <x>423</x>
+     <y>459</y>
+     <width>89</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string> OK</string>
+   </property>
+   <property name="icon">
+    <iconset>
+     <normalon>../AppData/Roaming/QGIS/.designer/backup/ok.png</normalon>
+    </iconset>
+   </property>
+  </widget>
+  <widget class="QSpinBox" name="threshold">
+   <property name="geometry">
+    <rect>
+     <x>385</x>
+     <y>317</y>
+     <width>121</width>
+     <height>22</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QLabel" name="overlay_title_2">
+   <property name="geometry">
+    <rect>
+     <x>50</x>
+     <y>300</y>
+     <width>291</width>
+     <height>51</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <weight>75</weight>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>Threshold signla strength in dBm (i.e. -65)</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="input_title_2">
+   <property name="geometry">
+    <rect>
+     <x>100</x>
+     <y>39</y>
+     <width>361</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>17</pointsize>
+     <weight>75</weight>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>Best RF Signal Analysis</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignCenter</set>
+   </property>
+  </widget>
+  <widget class="QgsCheckableComboBox" name="civic_attribute_value">
+   <property name="geometry">
+    <rect>
+     <x>406</x>
+     <y>239</y>
+     <width>95</width>
+     <height>24</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QComboBox QAbstractItemView {min-width: 400 px;}</string>
+   </property>
+  </widget>
+  <widget class="QgsCheckableComboBox" name="tower_attribute_value">
+   <property name="geometry">
+    <rect>
+     <x>404</x>
+     <y>163</y>
+     <width>95</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QComboBox QAbstractItemView {min-width: 400 px;}</string>
+   </property>
+  </widget>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>QgsCheckableComboBox</class>
+   <extends>QComboBox</extends>
+   <header>qgscheckablecombobox.h</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>
