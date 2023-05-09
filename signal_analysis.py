@@ -64,12 +64,6 @@ class Worker(QThread):
         self.iface = iface
     
     def signal_analysis(self):
-        """
-        To run tasks according to action selected in the top dropdown
-        @Params     None
-        @return     None
-        @author     Original Author Asim Aziz   -   County Broadband [asim.aziz[a]countybroadband.co.uk]
-        """
         # substitute with your code.
         try:
             mapcanvas = self.iface.mapCanvas()
@@ -101,8 +95,8 @@ class Worker(QThread):
             self.civic_attr_value = self.dlg.civic_attribute_value.checkedItems()
             self.tower_attr_value = self.dlg.tower_attribute_value.checkedItems()
             
-            self.civic_selected = self.dlg.tower_layer_selected.isChecked()
-            self.tower_selected = self.dlg.civic_layer_selected.isChecked()
+            self.tower_selected = self.dlg.tower_layer_selected.isChecked()
+            self.civic_selected = self.dlg.civic_layer_selected.isChecked()
 
             self.threashold = self.dlg.threshold.value()
             
@@ -114,97 +108,81 @@ class Worker(QThread):
                     self.civic_layer_ = layerdd
             
             # create Spatial Index     
-            if self.civic_selected:
-                civic_spatial_index = QgsSpatialIndex()
-                for feature in self.civic_layer_.getSelectedFeatures():
-                    civic_spatial_index.insertFeature(feature)
-            else:
-                civic_spatial_index = QgsSpatialIndex(self.civic_layer_.getFeatures())
+            civic_spatial_index = QgsSpatialIndex(self.civic_layer_.getFeatures())
 
-            if self.tower_selected:
-                self.tower_index = QgsSpatialIndex()
-                for feature in self.tower_layer_.getSelectedFeatures():
-                    self.tower_index.insertFeature(feature)
-            else:
-                self.tower_index = QgsSpatialIndex(self.tower_layer_.getFeatures())
+            self.tower_index = QgsSpatialIndex(self.tower_layer_.getFeatures())
             # algo
             line_layer.startEditing()
             total = self.tower_layer_.featureCount()
-            try:
-                for iter, tower in enumerate(self.get_features(self.tower_layer_, self.tower_selected)):
-                    if not self.filter_attrs(self.tower_layer_attr, self.tower_attr_value, tower):
+            
+            for iter, tower in enumerate(self.get_features(self.tower_layer_, self.tower_selected)):
+                if not self.filter_attrs(self.tower_layer_attr, self.tower_attr_value, tower):
+                    continue
+                tower_geom = tower.geometry()
+                nearest_point_features = civic_spatial_index.nearestNeighbor(tower_geom, 200)
+                for civic in self.civic_layer_.getFeatures(QgsFeatureRequest().setFilterFids(nearest_point_features)):
+                    if not self.filter_attrs(self.civic_layer_attr, self.civic_attr_value, civic):
                         continue
-                    tower_geom = tower.geometry()
-                    nearest_point_features = civic_spatial_index.nearestNeighbor(tower_geom, 200)
-                    for civic in self.civic_layer_.getFeatures(QgsFeatureRequest().setFilterFids(nearest_point_features)):
-                        if not self.filter_attrs(self.civic_layer_attr, self.civic_attr_value, civic):
-                            continue
-                        civic_geom = civic.geometry()
-                        if not self.filter_threashold(civic):
-                            continue
-                        if not self.check_if_current_tower_is_nearest(civic, tower):
-                            continue
-                        if not self.verify_tower_name(civic, tower):
-                            continue
-                        # if not self.verify_azimuth(civic_geom, tower_geom, civic):
-                        #     continue
-                        self.civic_layer_.select(civic.id())
-                        # create a line feature and add it to the layer
-                        id = line_layer.featureCount()
-                        feature = QgsFeature()
-                        feature.setGeometry(QgsGeometry.fromPolylineXY([civic_geom.asPoint(), tower_geom.asPoint()]))  # define the line geometry
-                        feature.setAttributes([int(id)+1, civic.id(), tower.id()])
-                        line_layer.addFeature(feature)
-                
-                    self.progress.emit(int((iter+1)/total*100))
-            except Exception as e:
-                self.log_text += f"{e}"
-                self.logs.emit(self.log_text)
-            # line_layer.commitChanges()
-            # unique_values = line_layer.uniqueValues(line_layer.fieldNameIndex('tower'))
-            # color_map = {}
-            # for value in unique_values:
-            #     color_code = self.generate_unique_color()
-            #     color_map[value] = QColor(color_code)
-            # # Create a categorized symbol renderer
-            # renderer = 	QgsCategorizedSymbolRenderer('tower', [])
-            # # Set a color for each category
-            # for value, color in color_map.items():
-            #     symbol = QgsSymbol.defaultSymbol(line_layer.geometryType())
-            #     symbol.setColor(color)
-            #     category = QgsRendererCategory(str(value), symbol, str(value))
-            #     renderer.addCategory(category)
+                    civic_geom = civic.geometry()
+                    if not self.filter_threashold(civic):
+                        continue
+                    if not self.check_if_current_tower_is_nearest(civic, tower):
+                        continue
+                    if not self.verify_tower_name(civic, tower):
+                        continue
+                    # if not self.verify_azimuth(civic_geom, tower_geom, civic):
+                    #     continue
+                    self.civic_layer_.select(civic.id())
+                    # create a line feature and add it to the layer
+                    id = line_layer.featureCount()
+                    feature = QgsFeature()
+                    feature.setGeometry(QgsGeometry.fromPolylineXY([civic_geom.asPoint(), tower_geom.asPoint()]))  # define the line geometry
+                    feature.setAttributes([int(id)+1, civic.id(), tower.id()])
+                    line_layer.addFeature(feature)
+            
+                self.progress.emit(int((iter+1)/total*100))
 
-            #     # Set the renderer for the layer
-            #     line_layer.setRenderer(renderer)
+            line_layer.commitChanges()
+            idx = line_layer.fields().indexOf('tower')
+            unique_values = line_layer.uniqueValues(idx)
+            color_map = {}
+            for value in unique_values:
+                color_code = self.generate_unique_color()
+                color_map[value] = QColor(color_code)
+            # Create a categorized symbol renderer
+            renderer = 	QgsCategorizedSymbolRenderer('tower', [])
+            # Set a color for each category
+            for value, color in color_map.items():
+                symbol = QgsSymbol.defaultSymbol(line_layer.geometryType())
+                symbol.setColor(color)
+                category = QgsRendererCategory(str(value), symbol, str(value))
+                renderer.addCategory(category)
 
-            #     # Refresh the layer to update the symbology
-            #     line_layer.triggerRepaint()
+                # Set the renderer for the layer
+                line_layer.setRenderer(renderer)
+
+                # Refresh the layer to update the symbology
+                line_layer.triggerRepaint()
             
         except Exception as e:
-            self.log_text += f"{e}"
-            self.logs.emit(self.log_text)
             self.finished.emit()
         finally:
             self.progress.emit(100)
             self.finished.emit()
 
     def verify_tower_name(self, civic, tower):
-        try:
-            tower_name = tower.attribute('site')
-            civic_tower = civic.attribute('Best Serve')
-            if not civic.attribute('Best Serve'):
-                return False
-            splitted_ = str(civic_tower).split('_')
-        
-            tower_name = str(tower_name).replace(' ', '')
-
-            if tower_name == splitted_[0]:
-                return True
+        tower_name = tower.attribute('site')
+        civic_tower = civic.attribute('Best Serve')
+        if not civic.attribute('Best Serve'):
             return False
-        except Exception as e:
-            self.log_text += f"{e}"
-            self.logs.emit(self.log_text)
+        splitted_ = str(civic_tower).split('_')
+    
+        tower_name = str(tower_name).replace(' ', '')
+
+        if tower_name == splitted_[0]:
+            return True
+        return False
+        
 
     def generate_unique_color(self):
         """
@@ -217,57 +195,45 @@ class Worker(QThread):
 
 
     def filter_threashold(self, civic):
-        try:
-            civic_threshold = civic.attribute('Received P')
-            if civic_threshold >= self.threashold:
-                return True
-            return False
-        except Exception as e:
-            self.log_text += f"{e}"
-            self.logs.emit(self.log_text)
+
+        civic_threshold = civic.attribute('Received P')
+        if civic_threshold >= self.threashold:
+            return True
+        return False
+
 
     def check_if_current_tower_is_nearest(self, civic, tower):
-        try:
-
-            civic_geom = civic.geometry()
-            current_distance = civic_geom.distance(tower.geometry())
-            get_tower = self.get_neighbors(civic.geometry())
-            for tower in get_tower:
-                distance = tower.geometry().distance(civic_geom)
-                if current_distance > distance:
-                    return False
-            else:
-                return True
-        except Exception as e:
-            self.log_text += f"{e}"
-            self.logs.emit(self.log_text)
+        civic_geom = civic.geometry()
+        current_distance = civic_geom.distance(tower.geometry())
+        get_tower = self.get_neighbors(civic.geometry())
+        for tower in get_tower:
+            distance = tower.geometry().distance(civic_geom)
+            if current_distance > distance:
+                return False
+        else:
+            return True
 
     def verify_azimuth(self, civic, tower, civic_feature):
-        try:
-            civic_point = civic.asPoint()
-            tower_point = tower.asPoint()
-            if not civic_feature.attribute('Best Serve'):
-                return False
-            azimuth = QgsPointXY(civic_point[0], civic_point[1]).azimuth(QgsPointXY(tower_point[0], tower_point[1]))
-            civic_azi = civic_feature.attribute('Best Serve')
-            splitted_ = str(civic_azi).split('_')[-1]
-            civic_azi = splitted_[1:]
 
-            if float(civic_azi) <= azimuth:
-                return True
+        civic_point = civic.asPoint()
+        tower_point = tower.asPoint()
+        if not civic_feature.attribute('Best Serve'):
             return False
-        except Exception as e:
-            self.log_text += f"{e}"
-            self.logs.emit(self.log_text)
+        azimuth = QgsPointXY(civic_point[0], civic_point[1]).azimuth(QgsPointXY(tower_point[0], tower_point[1]))
+        civic_azi = civic_feature.attribute('Best Serve')
+        splitted_ = str(civic_azi).split('_')[-1]
+        civic_azi = splitted_[1:]
+
+        if float(civic_azi) <= azimuth:
+            return True
+        return False
+
     
     def get_neighbors(self, geom):
-        try:
-            nearest_ids = self.tower_index.nearestNeighbor(geom, 10)
-            features = self.tower_layer_.getFeatures(QgsFeatureRequest().setFilterFids(nearest_ids))   
-            return features                
-        except Exception as e:
-            self.log_text += f"{e}"
-            self.logs.emit(self.log_text)
+        nearest_ids = self.tower_index.nearestNeighbor(geom, 10)
+        features = self.tower_layer_.getFeatures(QgsFeatureRequest().setFilterFids(nearest_ids))   
+        return features                
+
             
     def get_features(self, layer, isSelected):
         return layer.selectedFeatures() if isSelected else layer.getFeatures()
