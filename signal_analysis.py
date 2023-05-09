@@ -70,7 +70,8 @@ class Worker(QThread):
             layers = mapcanvas.layers()
 
             # # create a temporary line layer to connect civics to tower
-            fields = [QgsField('id', QVariant.Int), QgsField('civic', QVariant.Int), QgsField('tower', QVariant.Int)]
+            fields = [QgsField('id', QVariant.Int),
+             QgsField('civic', QVariant.Int), QgsField('tower', QVariant.Int), QgsField('azimuth', QVariant.Int)]
             # create the line layer
             current_time = datetime.datetime.now()
             line_layer = QgsVectorLayer('LineString', f'Civic To Tower Line Layer {current_time}', 'memory')
@@ -97,8 +98,12 @@ class Worker(QThread):
             
             self.tower_selected = self.dlg.tower_layer_selected.isChecked()
             self.civic_selected = self.dlg.civic_layer_selected.isChecked()
+            self.threashold_check = self.dlg.threshold_check.isChecked()
 
             self.threashold = self.dlg.threshold.value()
+
+            self.azimuth = self.dlg.azimuth.checkedItems()
+
             
             # get layers object
             for layerdd in layers:
@@ -114,7 +119,6 @@ class Worker(QThread):
             # algo
             line_layer.startEditing()
             total = self.tower_layer_.featureCount()
-            
             for iter, tower in enumerate(self.get_features(self.tower_layer_, self.tower_selected)):
                 if not self.filter_attrs(self.tower_layer_attr, self.tower_attr_value, tower):
                     continue
@@ -130,27 +134,27 @@ class Worker(QThread):
                         continue
                     if not self.verify_tower_name(civic, tower):
                         continue
-                    # if not self.verify_azimuth(civic_geom, tower_geom, civic):
-                    #     continue
+                    if not self.verify_azimuth(civic_geom, tower_geom, civic):
+                        continue
                     self.civic_layer_.select(civic.id())
                     # create a line feature and add it to the layer
                     id = line_layer.featureCount()
                     feature = QgsFeature()
                     feature.setGeometry(QgsGeometry.fromPolylineXY([civic_geom.asPoint(), tower_geom.asPoint()]))  # define the line geometry
-                    feature.setAttributes([int(id)+1, civic.id(), tower.id()])
+                    feature.setAttributes([int(id)+1, civic.id(), tower.id(), self.civic_azimuth])
                     line_layer.addFeature(feature)
             
                 self.progress.emit(int((iter+1)/total*100))
 
             line_layer.commitChanges()
-            idx = line_layer.fields().indexOf('tower')
+            idx = line_layer.fields().indexOf('azimuth')
             unique_values = line_layer.uniqueValues(idx)
             color_map = {}
             for value in unique_values:
                 color_code = self.generate_unique_color()
                 color_map[value] = QColor(color_code)
             # Create a categorized symbol renderer
-            renderer = 	QgsCategorizedSymbolRenderer('tower', [])
+            renderer = 	QgsCategorizedSymbolRenderer('azimuth', [])
             # Set a color for each category
             for value, color in color_map.items():
                 symbol = QgsSymbol.defaultSymbol(line_layer.geometryType())
@@ -195,7 +199,8 @@ class Worker(QThread):
 
 
     def filter_threashold(self, civic):
-
+        if self.threashold_check:
+            return True
         civic_threshold = civic.attribute('Received P')
         if civic_threshold >= self.threashold:
             return True
@@ -215,16 +220,13 @@ class Worker(QThread):
 
     def verify_azimuth(self, civic, tower, civic_feature):
 
-        civic_point = civic.asPoint()
-        tower_point = tower.asPoint()
         if not civic_feature.attribute('Best Serve'):
             return False
-        azimuth = QgsPointXY(civic_point[0], civic_point[1]).azimuth(QgsPointXY(tower_point[0], tower_point[1]))
         civic_azi = civic_feature.attribute('Best Serve')
         splitted_ = str(civic_azi).split('_')[-1]
         civic_azi = splitted_[1:]
-
-        if float(civic_azi) <= azimuth:
+        if str(civic_azi) in self.azimuth:
+            self.civic_azimuth = civic_azi
             return True
         return False
 
@@ -412,11 +414,15 @@ class SignalAnalysis:
 
         self.dlg.civic_layer.clear()
         self.dlg.tower_layer.clear()
+        self.dlg.azimuth.clear()
         for layerdd in layers:
             if isinstance(layerdd, QgsVectorLayer):
                 self.dlg.tower_layer.addItems([layerdd.name()])
                 self.dlg.civic_layer.addItems([layerdd.name()])
         # triggers
+        self.azimuth_dropdown()
+        self.dlg.civic_layer.currentTextChanged.connect(self.azimuth_dropdown)
+        self.dlg.threshold_check.stateChanged.connect(self.disable_the_threshold)
         self.add_attributes_dropdown(civic=True, tower=True)
         self.dlg.civic_layer.currentTextChanged.connect(self.civic_layer)
         self.dlg.tower_layer.currentTextChanged.connect(self.tower_layer)
@@ -482,6 +488,38 @@ class SignalAnalysis:
     
     def set_civic_attrs_value(self):
         self.add_field_values(civic=True)
+
+    def azimuth_dropdown(self):
+        self.dlg.azimuth.clear()
+        mapcanvas = self.iface.mapCanvas()
+        layersdd = mapcanvas.layers()
+        civic_layer = self.dlg.civic_layer.currentText()
+        unique_azimuth = list()
+        for layer in layersdd:
+            if layer.name() == civic_layer:
+                civic_layer = layer
+        try:
+            idx = layer.fields().indexOf('Best Serve')
+            values = layer.uniqueValues(idx)
+            for value in values:
+                if not value:
+                    continue
+                splitted_ = str(value).split('_')[-1]
+                civic_azi = splitted_[1:]
+                if civic_azi not in unique_azimuth:
+                    unique_azimuth.append(civic_azi)
+        except:
+            unique_azimuth = "Please civic layer!"
+            self.dlg.azimuth.addItems(unique_azimuth)
+            return True
+        
+        self.dlg.azimuth.addItems(str(l) for l in unique_azimuth)
+
+    def disable_the_threshold(self):
+        if self.dlg.threshold_check.isChecked():
+            self.dlg.threshold.setEnabled(False)
+        else:
+            self.dlg.threshold.setEnabled(True)
 
     def add_field_values(self, tower=False, civic=False):
         mapcanvas = self.iface.mapCanvas()

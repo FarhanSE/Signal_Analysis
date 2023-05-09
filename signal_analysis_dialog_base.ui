@@ -24,9 +24,9 @@
    </property>
    <property name="font">
     <font>
-     <pointsize>7</pointsize>
-     <weight>50</weight>
-     <bold>false</bold>
+     <pointsize>9</pointsize>
+     <weight>75</weight>
+     <bold>true</bold>
     </font>
    </property>
    <property name="text">
@@ -44,9 +44,9 @@
    </property>
    <property name="font">
     <font>
-     <pointsize>7</pointsize>
-     <weight>50</weight>
-     <bold>false</bold>
+     <pointsize>9</pointsize>
+     <weight>75</weight>
+     <bold>true</bold>
     </font>
    </property>
    <property name="text">
@@ -64,9 +64,9 @@
    </property>
    <property name="font">
     <font>
-     <pointsize>7</pointsize>
-     <weight>50</weight>
-     <bold>false</bold>
+     <pointsize>9</pointsize>
+     <weight>75</weight>
+     <bold>true</bold>
     </font>
    </property>
    <property name="text">
@@ -84,9 +84,9 @@
    </property>
    <property name="font">
     <font>
-     <pointsize>7</pointsize>
-     <weight>50</weight>
-     <bold>false</bold>
+     <pointsize>9</pointsize>
+     <weight>75</weight>
+     <bold>true</bold>
     </font>
    </property>
    <property name="text">
@@ -104,9 +104,9 @@
    </property>
    <property name="font">
     <font>
-     <pointsize>7</pointsize>
-     <weight>50</weight>
-     <bold>false</bold>
+     <pointsize>9</pointsize>
+     <weight>75</weight>
+     <bold>true</bold>
     </font>
    </property>
    <property name="text">
@@ -202,9 +202,9 @@
    </property>
    <property name="font">
     <font>
-     <pointsize>7</pointsize>
-     <weight>50</weight>
-     <bold>false</bold>
+     <pointsize>9</pointsize>
+     <weight>75</weight>
+     <bold>true</bold>
     </font>
    </property>
    <property name="text">
@@ -228,7 +228,7 @@
    <property name="geometry">
     <rect>
      <x>52</x>
-     <y>382</y>
+     <y>416</y>
      <width>457</width>
      <height>30</height>
     </rect>
@@ -259,7 +259,7 @@
    <property name="geometry">
     <rect>
      <x>385</x>
-     <y>317</y>
+     <y>367</y>
      <width>121</width>
      <height>22</height>
     </rect>
@@ -272,7 +272,7 @@
    <property name="geometry">
     <rect>
      <x>50</x>
-     <y>300</y>
+     <y>350</y>
      <width>311</width>
      <height>51</height>
     </rect>
@@ -334,6 +334,64 @@
    </property>
    <property name="styleSheet">
     <string notr="true">QComboBox QAbstractItemView {min-width: 400 px;}</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="overlay_title_3">
+   <property name="geometry">
+    <rect>
+     <x>50</x>
+     <y>281</y>
+     <width>311</width>
+     <height>51</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <weight>75</weight>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>Please select the azimuth</string>
+   </property>
+  </widget>
+  <widget class="QgsCheckableComboBox" name="azimuth">
+   <property name="geometry">
+    <rect>
+     <x>383</x>
+     <y>298</y>
+     <width>120</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QComboBox QAbstractItemView {min-width: 400 px;}</string>
+   </property>
+  </widget>
+  <widget class="QCheckBox" name="threshold_check">
+   <property name="geometry">
+    <rect>
+     <x>49</x>
+     <y>340</y>
+     <width>292</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>11</pointsize>
+     <weight>75</weight>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>Disable the Threshold field</string>
+   </property>
+   <property name="iconSize">
+    <size>
+     <width>18</width>
+     <height>18</height>
+    </size>
    </property>
   </widget>
  </widget>
