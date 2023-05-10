@@ -430,6 +430,8 @@ class SignalAnalysis:
         self.dlg.tower_attribute.currentTextChanged.connect(self.set_tower_attrs_value)
         self.dlg.run.clicked.connect(self.startWorker)
         self.dlg.close_window.clicked.connect(self.killWorker)
+        self.dlg.civic_attribute_value.checkedItemsChanged.connect(self.azimuth_dropdown)
+        
         # show the dialog
         self.dlg.show()
         # Run the dialog event loop
@@ -490,7 +492,19 @@ class SignalAnalysis:
         self.add_field_values(civic=True)
 
     def azimuth_dropdown(self):
+
         self.dlg.azimuth.clear()
+        selected_azi = self.dlg.civic_attribute_value.checkedItems()
+        if len(selected_azi) != 0:
+            unique_azimuth = list()
+            for selected in selected_azi:
+                splitted_ = str(selected).split('_')[-1]
+                civic_azi = splitted_[1:]
+                if civic_azi not in unique_azimuth:
+                    unique_azimuth.append(civic_azi)
+            self.dlg.azimuth.addItems(str(l) for l in unique_azimuth)
+            return True        
+            
         mapcanvas = self.iface.mapCanvas()
         layersdd = mapcanvas.layers()
         civic_layer = self.dlg.civic_layer.currentText()
