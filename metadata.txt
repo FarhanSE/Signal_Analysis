@@ -6,7 +6,7 @@
 name=Signal Analysis
 qgisMinimumVersion=3.0
 description=Perform Analysis
-version=0.1
+version=0.3
 author=Muhammad Farhan
 email=mher.farhan@gmail.com
 

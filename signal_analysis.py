@@ -45,7 +45,7 @@ from qgis.core import (
     QgsProject
 
 )
-import datetime
+
 import random
 
 
@@ -68,13 +68,14 @@ class Worker(QThread):
         try:
             mapcanvas = self.iface.mapCanvas()
             layers = mapcanvas.layers()
-
+            tower_selected = self.dlg.tower_attribute_value.checkedItems()
+            tower_name = ''.join(l for l in tower_selected)
             # # create a temporary line layer to connect civics to tower
             fields = [QgsField('id', QVariant.Int),
              QgsField('civic', QVariant.Int), QgsField('tower', QVariant.Int), QgsField('azimuth', QVariant.Int)]
             # create the line layer
-            current_time = datetime.datetime.now()
-            line_layer = QgsVectorLayer('LineString', f'Civic To Tower Line Layer {current_time}', 'memory')
+
+            line_layer = QgsVectorLayer('LineString', f'{tower_name}', 'memory')
             line_layer.setCrs(QgsCoordinateReferenceSystem('EPSG:26920'))  
 
             # add the fields to the layer
