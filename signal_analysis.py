@@ -176,14 +176,19 @@ class Worker(QThread):
 
     def verify_tower_name(self, civic, tower):
         tower_name = tower.attribute('site')
+        final_name = str()
+        for name in tower_name:
+            if name.isdigit():
+                continue
+            final_name += name
         civic_tower = civic.attribute('Best Serve')
         if not civic.attribute('Best Serve'):
             return False
         splitted_ = str(civic_tower).split('_')
     
-        tower_name = str(tower_name).replace(' ', '')
+        final_name = str(final_name).replace(' ', '')
 
-        if tower_name == splitted_[0]:
+        if final_name == splitted_[0]:
             return True
         return False
         
@@ -405,9 +410,7 @@ class SignalAnalysis:
 
         # Create the dialog with elements (after translation) and keep reference
         # Only create GUI ONCE in callback, so that it will only load when the plugin is started
-        if self.first_start == True:
-            self.first_start = False
-            self.dlg = SignalAnalysisDialog()
+        self.dlg = SignalAnalysisDialog()
 
         mapcanvas = self.iface.mapCanvas()
         layers = mapcanvas.layers()
@@ -511,10 +514,10 @@ class SignalAnalysis:
         unique_azimuth = list()
         for layer in layersdd:
             if layer.name() == civic_layer:
-                civic_layer = layer
+                self.civic_layer_ = layer
         try:
-            idx = layer.fields().indexOf('Best Serve')
-            values = layer.uniqueValues(idx)
+            idx = self.civic_layer_.fields().indexOf('Best Serve')
+            values = self.civic_layer_.uniqueValues(idx)
             for value in values:
                 if not value:
                     continue
@@ -523,8 +526,6 @@ class SignalAnalysis:
                 if civic_azi not in unique_azimuth:
                     unique_azimuth.append(civic_azi)
         except:
-            unique_azimuth = "Please civic layer!"
-            self.dlg.azimuth.addItems(unique_azimuth)
             return True
         
         self.dlg.azimuth.addItems(str(l) for l in unique_azimuth)
