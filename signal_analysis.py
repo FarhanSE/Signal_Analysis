@@ -128,15 +128,20 @@ class Worker(QThread):
                 for civic in self.civic_layer_.getFeatures(QgsFeatureRequest().setFilterFids(nearest_point_features)):
                     if not self.filter_attrs(self.civic_layer_attr, self.civic_attr_value, civic):
                         continue
+                    print(1)
                     civic_geom = civic.geometry()
                     if not self.filter_threashold(civic):
                         continue
+                    print(2)
                     if not self.check_if_current_tower_is_nearest(civic, tower):
                         continue
+                    print(3)
                     if not self.verify_tower_name(civic, tower):
                         continue
+                    print(4)
                     if not self.verify_azimuth(civic_geom, tower_geom, civic):
                         continue
+                    print(5)
                     self.civic_layer_.select(civic.id())
                     # create a line feature and add it to the layer
                     id = line_layer.featureCount()
@@ -171,6 +176,7 @@ class Worker(QThread):
             
         except Exception as e:
             self.finished.emit()
+            print(e)
         finally:
             self.progress.emit(100)
             self.finished.emit()
@@ -188,8 +194,10 @@ class Worker(QThread):
         splitted_ = str(civic_tower).split('_')
     
         final_name = str(final_name).replace(' ', '')
+        splitted_ = str(splitted_[0]).replace(' ', '')
 
-        if final_name == splitted_[0]:
+        
+        if final_name in splitted_:
             return True
         return False
         
