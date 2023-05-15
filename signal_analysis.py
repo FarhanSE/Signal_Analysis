@@ -128,20 +128,15 @@ class Worker(QThread):
                 for civic in self.civic_layer_.getFeatures(QgsFeatureRequest().setFilterFids(nearest_point_features)):
                     if not self.filter_attrs(self.civic_layer_attr, self.civic_attr_value, civic):
                         continue
-                    print(1)
                     civic_geom = civic.geometry()
                     if not self.filter_threashold(civic):
                         continue
-                    print(2)
                     if not self.check_if_current_tower_is_nearest(civic, tower):
                         continue
-                    print(3)
                     if not self.verify_tower_name(civic, tower):
                         continue
-                    print(4)
                     if not self.verify_azimuth(civic_geom, tower_geom, civic):
                         continue
-                    print(5)
                     self.civic_layer_.select(civic.id())
                     # create a line feature and add it to the layer
                     id = line_layer.featureCount()
