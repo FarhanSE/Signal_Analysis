@@ -71,17 +71,12 @@ class Worker(QThread):
             tower_selected = self.dlg.tower_attribute_value.checkedItems()
             tower_name = ''.join(l for l in tower_selected)
             # # create a temporary line layer to connect civics to tower
-            fields = [QgsField('id', QVariant.Int),
-             QgsField('civic', QVariant.Int), QgsField('tower', QVariant.Int), QgsField('azimuth', QVariant.Int)]
             # create the line layer
 
             line_layer = QgsVectorLayer('LineString', f'{tower_name}', 'memory')
             line_layer.setCrs(QgsCoordinateReferenceSystem('EPSG:26920'))  
 
-            # add the fields to the layer
-            line_layer.startEditing()
-            line_layer.dataProvider().addAttributes(fields)
-            line_layer.commitChanges()
+            
 
             # Add the layer to the map
             QgsProject.instance().addMapLayer(line_layer)
@@ -112,7 +107,26 @@ class Worker(QThread):
                     self.tower_layer_ = layerdd
                 if layerdd.name() == self.civic_layer:
                     self.civic_layer_ = layerdd
-            
+            # set fields for line layer
+            fields = list()
+            field_names = {}
+            for field in self.tower_layer_.fields():
+                fields.append(field)
+                field_names[field.name()] = True
+
+            for field in self.civic_layer_.fields():
+                field_name = field.name()
+                if field_name in field_names:
+                # Field name already exists, add a prefix to make it unique
+                    field_name = 'civic_layer_' + field_name
+                fields.append(QgsField(field_name, field.type()))
+                field_names[field_name] = True
+            fields.append(QgsField('azimuth', QVariant.Int))
+            # add the fields to the layer
+            line_layer.startEditing()
+            line_layer.dataProvider().addAttributes(fields)
+            line_layer.commitChanges()
+
             # create Spatial Index     
             civic_spatial_index = QgsSpatialIndex(self.civic_layer_.getFeatures())
 
@@ -139,11 +153,12 @@ class Worker(QThread):
                         continue
                     self.civic_layer_.select(civic.id())
                     # create a line feature and add it to the layer
-                    id = line_layer.featureCount()
-                    feature = QgsFeature()
+                    feature = QgsFeature(line_layer.fields())
                     feature.setGeometry(QgsGeometry.fromPolylineXY([civic_geom.asPoint(), tower_geom.asPoint()]))  # define the line geometry
-                    feature.setAttributes([int(id)+1, civic.id(), tower.id(), self.civic_azimuth])
-                    line_layer.addFeature(feature)
+                    attributes = tower.attributes() + civic.attributes()
+                    attributes.append(self.civic_azimuth)
+                    feature.setAttributes(attributes)
+                    line_layer.dataProvider().addFeature(feature)
             
                 self.progress.emit(int((iter+1)/total*100))
 
