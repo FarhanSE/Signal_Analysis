@@ -8,8 +8,8 @@
                               -------------------
         begin                : 2023-05-05
         git sha              : $Format:%H$
-        copyright            : (C) 2023 by Muhammad Farhan
-        email                : mher.farhan@gmail.com
+        copyright            : (C) 2023 by Nnadozie Amadi
+        email                :  Dozyamadi9@gmail.com
  ***************************************************************************/
 
 /***************************************************************************
